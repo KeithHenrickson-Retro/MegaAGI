@@ -56,6 +56,23 @@
                 "senddisk"
             ],
             "problemMatcher": []
+        },
+        {
+            "label": "Run Xemu",
+            "type": "shell",
+            "command": "xemu-xmega65",
+            "args": [
+                "-8",
+                "agi.d81",
+                "-uartmon",
+                ":4510",
+                "-prg",
+                "agi.lgo"
+            ],
+            "options": {
+                "cwd": "${workspaceRoot}"
+            },
+            "problemMatcher": []
         }
     ]
 }

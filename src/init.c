@@ -164,8 +164,6 @@ void init_system(void)
   VICIV.key = 0x47;
   VICIV.key = 0x53;
 
-  VICIV.ctrl1 = 0x0b;
-
   VICIV.palsel = 0;
   uint8_t palette_index = 0;
   for (int i = 0; i < 48; i += 3)
@@ -186,6 +184,12 @@ void init_system(void)
     palette_index++;
   }
   VICIV.palsel = (VICIV.palsel & 0x3F);
+
+  VICIV.ctrla = VICIV.ctrla | VIC3_PAL_MASK;
+  VICIV.ctrlb = VICIV.ctrlb & ~(VIC3_H640_MASK | VIC3_V400_MASK);
+  VICIV.ctrlc = (VICIV.ctrlc & ~(VIC4_FCLRLO_MASK)) | (VIC4_FCLRHI_MASK | VIC4_CHR16_MASK);
+
+  VICIV.ctrl1 = 0x1b;
 
   VICIV.bordercol = COLOR_BLACK;
   VICIV.screencol = COLOR_BLACK;
@@ -215,8 +219,6 @@ void init_system(void)
   init_print(GIT_MSG);
   init_print("\n\n");
   init_print("Loading interpreter modules...\n");
-
-  VICIV.ctrl1 = 0x1b;
 
   uint8_t result;
   uint32_t gamecode_size;

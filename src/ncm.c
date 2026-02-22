@@ -264,6 +264,10 @@ uint8_t palettedata[] =  {0x00, 0x00, 0x00,
                            };
 
 void gfx_setupmem(void) {
+  uint16_t color_code = 0x6f08;
+  if ((PEEK(0xd60f) & 0x20) == 0) {
+    color_code = 0x1f08;
+  }
   for (int y = 0; y < 25; y++) {
     for (int x = 0; x < 20; x++) {
       if ((y > 0) && (y < 22)) {
@@ -277,7 +281,7 @@ void gfx_setupmem(void) {
         // Color memory is set as 0x1f = Select palette 1, where the PC palette is loaded, and color 0x0f is the foreground color
         // The foreground color is important, because this is the color that will be used when the NCM screen has 0xf as a color
         // The 0x08 selects NCM mode, with no other flags
-        color_memory[y].graphics_chars[x]  = 0x6f08;       
+        color_memory[y].graphics_chars[x]  = color_code;       
       } else {
         // Point all characters on lines that do not have game graphics to the same character, which is a blank character
         screen_memory_0[y].graphics_chars[x] = 0x1400 + 21;        
@@ -285,7 +289,7 @@ void gfx_setupmem(void) {
         // Color memory is set as 0x1f = Select palette 1, where the PC palette is loaded, and color 0x0f is the foreground color
         // The foreground color is important, because this is the color that will be used when the NCM screen has 0xf as a color
         // The 0x08 selects NCM mode, with no other flags
-        color_memory[y].graphics_chars[x] = 0x6f08;       
+        color_memory[y].graphics_chars[x] = color_code;       
       }
     }
     // These are the GOTOX flag characters

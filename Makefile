@@ -44,18 +44,18 @@ agi.elf: $(OBJS_DEBUG)
 agi.exo: agi.prg
 	exomizer sfx basic -n -t 65 -o agi.exo agi.prg
 
-logosrc\agi.lgo: agi.exo
-	build-logo.cmd
+agi.lgo: agi.exo
+	./build-logo.sh
 
-mega65-agi.d81: agi.prg
+mega65-agi.d81: agi.lgo
 	$(C1541) -format "mega65,agi" d81 mega65-agi.d81
-	$(C1541) -attach mega65-agi.d81 -write agi.prg agi.c65
+	$(C1541) -attach mega65-agi.d81 -write agi.lgo agi.c65
 	$(C1541) -attach mega65-agi.d81 -write COPYING copying,s
 	$(C1541) -attach mega65-agi.d81 -write gamecode.raw gamecode,s
 	
-agi.d81: agi.prg
+agi.d81: agi.lgo
 	$(C1541) -format "agi,a1" d81 agi.d81
-	$(C1541) -attach agi.d81 -write agi.prg agi.c65
+	$(C1541) -attach agi.d81 -write agi.lgo agi.c65
 	$(C1541) -attach agi.d81 -write COPYING copying,s
 	$(C1541) -attach agi.d81 -write gamecode.raw gamecode,s
 	$(C1541) -attach agi.d81 -write kq1/LOGDIR logdir,s

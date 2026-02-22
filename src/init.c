@@ -164,6 +164,8 @@ void init_system(void)
   VICIV.key = 0x47;
   VICIV.key = 0x53;
 
+  VICIV.ctrl1 = 0x0b;
+
   VICIV.palsel = 0;
   uint8_t palette_index = 0;
   for (int i = 0; i < 48; i += 3)
@@ -213,6 +215,8 @@ void init_system(void)
   init_print(GIT_MSG);
   init_print("\n\n");
   init_print("Loading interpreter modules...\n");
+
+  VICIV.ctrl1 = 0x1b;
 
   uint8_t result;
   uint32_t gamecode_size;

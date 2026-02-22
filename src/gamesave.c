@@ -61,7 +61,7 @@ __far add_to_pic_command_t add_to_pic_commands[16];
 #pragma clang section bss=""
 
 uint8_t __huge *gamesave_cache;
-char *gamesaveid = "MASFV110";
+char *gamesaveid = "MASFV111";
 
 #pragma clang section bss="banked_bss" data="gamesave_data" rodata="gamesave_rodata" text="gamesave_text"
 
@@ -114,6 +114,10 @@ uint32_t gamesave_save_to_attic(void) {
     offset += sizeof(add_to_pic_commands);
     memmanage_memcpy_far_huge(&gamesave_cache[offset], (uint8_t __far *)pic_descriptors, sizeof(pic_descriptors));
     offset += sizeof(pic_descriptors);
+    for (uint8_t i = 0; i < menu_opts_used; i++) {
+        gamesave_cache[offset] = menu_entries[i].enabled;
+        offset++;
+    }
 
     memmanage_memcpy_far_huge(&gamesave_cache[offset], chipmem_base, 0x10000);
     offset += 0x10000;
@@ -191,6 +195,10 @@ uint8_t gamesave_load_from_attic(void) {
     offset += sizeof(add_to_pic_commands);
     memmanage_memcpy_huge_far((uint8_t __far *)pic_descriptors, &gamesave_cache[offset], sizeof(pic_descriptors));
     offset += sizeof(pic_descriptors);
+    for (uint8_t i = 0; i < menu_opts_used; i++) {
+        menu_entries[i].enabled = gamesave_cache[offset];
+        offset++;
+    }
 
     memmanage_memcpy_huge_far(chipmem_base, &gamesave_cache[offset], 0x10000);
     logic_set_flag(12);

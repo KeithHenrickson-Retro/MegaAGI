@@ -319,6 +319,7 @@ bool logic_run_low(void) {
             add_to_pic_commands[views_in_pic].priority = 0xff;
             add_to_pic_commands[views_in_pic].margin = 0xff;
             views_in_pic++;
+            select_picdraw_mem();
             draw_pic(logic_vars[program_counter[1]], false);
             status_line_score = 255;
             program_counter += 2;
@@ -1226,16 +1227,20 @@ bool logic_run_high(void) {
                 engine_allowinput(false);
                 player_control = true;
                 dialog_close();
+                dialog_enable_all_menu_items();
                 block_active = 0;
                 horizon_line = 36;
                 status_line_score = 255;
+                bool soundon = logic_flag_isset(9);
                 for (int counter = 0; counter < 256; counter++) {
                     logic_vars[counter] = 0;
                 }
                 for (int counter = 0; counter < 32; counter++) {
                     logic_flags[counter] = 0;
                 }
-                logic_set_flag(9);
+                if (soundon) {
+                    logic_set_flag(9);
+                }
                 logic_set_flag(11);
                 logic_vars[20] = 128;
                 logic_vars[22] = 3;

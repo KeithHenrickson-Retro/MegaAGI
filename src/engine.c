@@ -187,13 +187,13 @@ void handle_movement_joystick(void) {
 }
 
 void handle_movement_mouse(void) {
-    if (!player_control) {
-        return;
-    }
-
     if (mouse_leftclick == 1) {
         if (mouse_down == false) {
             if (mouse_ypos > 8) {
+                if (!player_control) {
+                    return;
+                }
+
                 sprites[0].prg_movetype = pmmMoveTo;
                 sprites[0].prg_x_destination = (mouse_xpos >> 1) - (sprites[0].view_info.width >> 1);
                 sprites[0].prg_y_destination = mouse_ypos - 8;
@@ -317,7 +317,7 @@ void engine_interrupt_handler(void) {
     if (!((*irr) & 0x01)) {
         // not a raster interrupt, ignore
         return;
-      }
+    }
 
     mouse_irq();
     sound_interrupt_handler();
@@ -326,9 +326,11 @@ void engine_interrupt_handler(void) {
     if (frame_counter >= 3) {
         if (!engine_running) {
             gfx_flippage();
+            run_engine = true;
+            frame_counter = 0;
+        } else {
+            frame_counter = 3;
         }
-        run_engine = true;
-        frame_counter = 0;
     }
     *irr = *irr; // ack interrupt
 }

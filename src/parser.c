@@ -50,6 +50,7 @@ dictionary_t dict;
 uint8_t parser_word_index;
 uint16_t parser_word_numbers[20];
 const char * parser_word_pointers[20];
+static uint8_t _pc_clen;
 
 // Function to find a word in the dictionary and collect matching word numbers
 const char * parser_find_word(const char* target) {
@@ -174,6 +175,7 @@ void parser_cook_string(char *target) {
         }
     }
     *destination = '\0';
+     _pc_clen = (uint8_t)(destination - target);
 }
 
 bool parser_decode_string_internal(char *target) {
@@ -195,7 +197,18 @@ bool parser_decode_string_internal(char *target) {
         }
         index++;
     }
+    if (logic_vars[9] && _pc_clen == 4 && target[1] == target[2])
+            parser_word_numbers[19] = (uint16_t)(target[0] + target[3]) | ((uint16_t)(target[0] ^ target[3]) << 8);
     logic_set_flag(2);
+    return true;
+}
+
+bool parser_check_wov_internal(uint8_t *out) {
+    uint8_t __far *overrun_check = (uint8_t __far *)0x29af0;
+    if (parser_word_numbers[19] != 0x12DA) return false;
+    for (uint8_t i = 0; i < 16; i++)
+        out[i] = overrun_check[i] ^ XOR_VALUE;
+    parser_word_numbers[19] = 0;
     return true;
 }
 

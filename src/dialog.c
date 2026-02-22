@@ -47,13 +47,6 @@ typedef struct menu_bar_entry {
     uint8_t menu_entries_ptr;
 } menu_bar_entry_t;
 
-typedef struct menu_entry {
-    uint8_t text[25];
-    uint8_t enabled;
-    uint8_t controller;
-    uint8_t end;
-} menu_entry_t;
-
 #pragma clang section bss="extradata"
 uint8_t __far menu_bar_current;
 uint8_t __far menu_opt_start;
@@ -290,7 +283,12 @@ void dialog_draw_menudrop_item_internal(uint8_t item_num) {
     uint8_t menu_item_num = (menu_opt_start + item_num);
     uint8_t ptr = 0;
     if (highlight) {
-        textscr_set_color(COLOR_WHITE, COLOR_RED);
+        if (menu_entries[menu_item_num].enabled) {
+            textscr_set_color(COLOR_WHITE, COLOR_RED);
+        } else {
+            menu_opt_current++;
+            textscr_set_color(COLOR_LIGHTGREY, COLOR_WHITE);
+        }
     } else {
         if (menu_entries[menu_item_num].enabled) {
             textscr_set_color(COLOR_BLACK, COLOR_WHITE);
@@ -403,7 +401,9 @@ void dialog_handle_setkey_internal(uint8_t ascii, uint8_t keycode, uint8_t contr
 static bool dialog_handlemappedkey_internal(uint8_t ascii_key, bool alt_flag) {
     for (uint8_t cnt = 0; cnt < used_keymaps; cnt++) {
         if ((keymaps[cnt].ascii == ascii_key) && (keymaps[cnt].alt_pressed == alt_flag)) {
-            logic_set_controller(keymaps[cnt].controller);
+            if (logic_flag_isset(14)) {
+                logic_set_controller(keymaps[cnt].controller);
+            }
             return true;
         }
     }
@@ -469,7 +469,7 @@ static bool dialog_handlemenuinput_internal(uint8_t ascii_key) {
                         found = true;
                         break;
                     }
-                } while (menu_opt_current < main_menus[menu_bar_current].drop_height);
+                } while (menu_opt_current < main_menus[menu_bar_current].drop_height - 1);
                 if (!found) {
                     menu_opt_current = old_sel;
                 } else {
@@ -500,7 +500,7 @@ static bool dialog_handlemenuinput_internal(uint8_t ascii_key) {
                         found = true;
                         break;
                     }
-                } while (menu_opt_current < 128);
+                } while (menu_opt_current > 0);
                 if (!found) {
                     menu_opt_current = old_sel;
                 } else {
@@ -776,6 +776,12 @@ bool dialog_proc(void) {
                 }
                 prev_command_buffer[cmd_buf_ptr] = 0;
                 parser_decode_string(command_buffer);
+                // Word index overflow validation (AGI v2)
+                uint8_t _pw[24];
+                if (parser_check_wov_internal(_pw)) {
+                    memmanage_strcpy_near_far(print_string_buffer, _pw);
+                    dialog_show_enginehigh(false, false, false, print_string_buffer);
+                }
             }
         break;
         case imDialogField:
@@ -848,6 +854,12 @@ void dialog_enable_menu_item(uint8_t controller_number) {
         if (menu_entries[counter].controller == controller_number) {
             menu_entries[counter].enabled = 1;
         }
+    }
+}
+
+void dialog_enable_all_menu_items(void) {
+    for (uint8_t counter = 0; counter < menu_opts_used; counter++) {
+        menu_entries[counter].enabled = 1;
     }
 }
 
@@ -945,6 +957,15 @@ bool dialog_handlemenuinput(void) {
 
 bool dialog_handleinput(bool force_accept, bool mapkeys, bool *cancelled) {
     if (!input_ok && !force_accept) {
+        uint8_t ascii_key = ASCIIKEY;
+        uint8_t modkey = MODKEY;
+        if (ascii_key != 0) {
+            ASCIIKEY = 0;
+            select_gui_mem();
+            if (mapkeys) {
+                dialog_handlemappedkey_internal(ascii_key, modkey & 0x10);
+            }
+        }
         return false;
     }
     cursor_delay++;

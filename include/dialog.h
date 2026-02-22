@@ -20,6 +20,15 @@
 #define DIALOG_H
 
 #include "main.h"
+typedef struct menu_entry {
+    uint8_t text[25];
+    uint8_t enabled;
+    uint8_t controller;
+    uint8_t end;
+} menu_entry_t;
+
+extern uint8_t __far menu_opts_used;
+extern menu_entry_t __far menu_entries[40];
 
 void dialog_draw_itemlist(void);
 void dialog_draw_menubar(bool mouse_trigger);
@@ -29,6 +38,7 @@ void dialog_gamesave_handler(char *filename);
 void dialog_gamesave_begin(bool save);
 void dialog_clear_keyboard(void);
 void dialog_enable_menu_item(uint8_t controller_number);
+void dialog_enable_all_menu_items(void);
 void dialog_disable_menu_item(uint8_t controller_number);
 void dialog_set_menu(uint8_t message_number);
 void dialog_set_menu_item(uint8_t message_number, uint8_t controller);

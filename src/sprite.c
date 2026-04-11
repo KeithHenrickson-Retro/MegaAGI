@@ -258,7 +258,7 @@ uint8_t sprite_checkpos(agisprite_t *sprite, int16_t new_xpos, int16_t new_ypos)
     uint8_t object_border = 0;
     if (new_xpos <= -1) {
         object_border = 4;
-    } else if (new_xpos > (160 - sprite->view_info.width)) {
+    } else if (new_xpos >= (160 - sprite->view_info.width)) {
         object_border = 2;
     } 
     

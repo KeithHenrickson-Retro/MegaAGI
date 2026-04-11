@@ -27,6 +27,7 @@ extern bool debug;
 typedef struct logic_info {
     uint16_t offset;
     uint8_t __far *text_offset;
+    uint16_t scan_start;
 } logic_info_t;
 
 uint8_t __far * logic_locate_message(uint8_t logic_num_query, uint8_t message_num);

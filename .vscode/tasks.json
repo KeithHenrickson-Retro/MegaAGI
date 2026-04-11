@@ -47,7 +47,7 @@
                 "agi.d81",
                 "-5",
                 "--ntsc",
-                "agi.lgo"
+                "agi.exo"
             ],
             "options": {
                 "cwd": "${workspaceRoot}"

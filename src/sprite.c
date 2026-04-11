@@ -44,6 +44,8 @@ void sprite_erase_animated(void);
 #pragma clang section bss="banked_bss" data="hs_spritedata" rodata="hs_spriterodata" text="hs_spritetext"
 
 view_info_t object_view;
+static bool sprite_alarm = false;
+static bool sprite_onland = false;
  
 void sprite_draw_to_pic(bool force_draw) {
     bool old_hold = gfx_hold_flip(true);
@@ -252,6 +254,94 @@ void autoselect_loop(agisprite_t *sprite) {
     }
 }
 
+uint8_t sprite_checkpos(agisprite_t *sprite, int16_t new_xpos, int16_t new_ypos) {
+    uint8_t object_border = 0;
+    if (new_xpos <= -1) {
+        object_border = 4;
+    } else if (new_xpos > (160 - sprite->view_info.width)) {
+        object_border = 2;
+    } 
+    
+    if ((new_ypos - sprite->view_info.height) <= -1) {
+        object_border = 1;
+    } else if (sprite->observe_horizon && (new_ypos <= horizon_line)) {
+        object_border = 1;
+    } else if (new_ypos > 167) {
+        object_border = 3;
+    }
+    return object_border;
+}
+
+bool sprite_checkpri(agisprite_t *sprite, int16_t new_xpos, int16_t new_ypos) {
+    bool control_line = false;
+    bool water_prio = false;
+    if (sprite->view_info.priority != 0x0f) {
+        for (int16_t control_xpos = new_xpos; control_xpos < (new_xpos + sprite->view_info.width); control_xpos++) {
+            uint8_t control_prio = gfx_getprio(control_xpos, new_ypos);
+            if (control_prio < 4) {
+                control_line = true;
+                if (control_prio == 0) {
+                    sprite->object_dir = 0;
+                } else if (control_prio == 1) {
+                    if (sprite->observe_blocks) {
+                        sprite->object_dir = 0;
+                    }
+                } else if (control_prio == 2) {
+                    sprite_alarm = true;
+                } else if (control_prio == 3) {
+                    water_prio = true;
+                }
+            }
+            if (control_prio != 3) {
+                sprite_onland = true;
+            }
+        }
+
+        if (control_line) {
+            if (water_prio && sprite->on_water) {
+                control_line = false;
+            } else if (!water_prio && sprite->on_land) {
+                control_line = false;
+            }
+        }
+
+        if (block_active) {
+            if (sprite->observe_blocks) {
+                bool sprite_entered = ((new_xpos < block_x2) && (new_xpos + sprite->view_info.width > block_x1) && (new_ypos >= block_y1) && (new_ypos <= block_y2));
+                if (sprite_entered) {
+                    sprite->object_dir = 0;
+                }
+            }
+        }
+    } else {
+        sprite_onland = true;
+    }
+    return control_line;
+}
+
+bool sprite_checkcol(agisprite_t *sprite, uint8_t spr_num, int16_t new_xpos, int16_t new_ypos) {
+    bool collided = false;
+    if (sprite->observe_object_collisions) {
+        for (int i = 0; i < animated_sprite_count; i++) {
+            if (animated_sprites[i] == spr_num) continue;
+            if (!sprites[animated_sprites[i]].drawable) continue;
+            if (!sprites[animated_sprites[i]].updatable) continue;
+            int16_t other_x = sprites[animated_sprites[i]].view_info.x_pos;
+            if ((new_xpos > (other_x+sprites[animated_sprites[i]].view_info.width)) || (new_xpos + sprite->view_info.width < other_x)) {
+                continue;
+            }
+            int16_t other_y = sprites[animated_sprites[i]].view_info.y_pos;
+            if (new_ypos != other_y) {
+                continue;
+            }
+            collided = true;
+            sprite->object_dir = 0;
+            break;
+        }
+    }
+    return collided;
+}
+
 uint8_t sprite_move(uint8_t spr_num, agisprite_t *sprite, uint8_t speed) {
     int16_t view_dx;
     int16_t view_dy;
@@ -303,75 +393,29 @@ uint8_t sprite_move(uint8_t spr_num, agisprite_t *sprite, uint8_t speed) {
     uint8_t object_border = 0;
     int16_t new_xpos = sprite->view_info.x_pos + view_dx;
     int16_t new_ypos = sprite->view_info.y_pos + view_dy;
-    if (new_xpos <= -1) {
-        object_border = 4;
-        sprite->object_dir = 0;
-    } else if (new_xpos > (160 - sprite->view_info.width)) {
-        object_border = 2;
-        sprite->object_dir = 0;
-    } 
+    object_border = sprite_checkpos(sprite, new_xpos, new_ypos);
+    switch (object_border) {
+        case 1:
+        case 3:
+            new_ypos = sprite->view_info.y_pos;
+            view_dy = 0;
+            break;
+        case 2:
+        case 4:
+            new_xpos = sprite->view_info.x_pos;
+            view_dx = 0;
+            break;
+    }
+    if ((view_dx == 0) && (view_dy == 0)) {
+         sprite->object_dir = 0;
+    }
+
+    sprite_alarm = false;
+    sprite_onland = false;
+    sprite_checkpri(sprite, new_xpos, new_ypos);
+
+    sprite_checkcol(sprite, spr_num, new_xpos, new_ypos);
     
-    if ((new_ypos - sprite->view_info.height) <= -1) {
-        object_border = 1;
-        sprite->object_dir = 0;
-    } else if (sprite->observe_horizon && (new_ypos <= horizon_line)) {
-        object_border = 1;
-        sprite->object_dir = 0;
-    } else if (new_ypos > 167) {
-        object_border = 3;
-        sprite->object_dir = 0;
-    }
-
-    bool sprite_alarm = false;
-    bool sprite_onland = false;
-    if (sprite->view_info.priority != 0x0f) {
-        for (int16_t control_xpos = new_xpos; control_xpos < (new_xpos + sprite->view_info.width); control_xpos++) {
-            uint8_t control_prio = gfx_getprio(control_xpos, new_ypos);
-            if (control_prio < 4) {
-                if (control_prio == 0) {
-                    sprite->object_dir = 0;
-                } else if (control_prio == 1) {
-                    if (sprite->observe_blocks) {
-                        sprite->object_dir = 0;
-                    }
-                } else if (control_prio == 2) {
-                    sprite_alarm = true;
-                }
-            }
-            if (control_prio != 3) {
-                sprite_onland = true;
-            }
-        }
-
-        if (block_active) {
-            if (sprite->observe_blocks) {
-                bool sprite_entered = ((new_xpos < block_x2) && (new_xpos + sprite->view_info.width > block_x1) && (new_ypos >= block_y1) && (new_ypos <= block_y2));
-                if (sprite_entered) {
-                    sprite->object_dir = 0;
-                }
-            }
-        }
-    } else {
-        sprite_onland = true;
-    }
-
-    if (sprite->observe_object_collisions) {
-        for (int i = 0; i < animated_sprite_count; i++) {
-            if (animated_sprites[i] == spr_num) continue;
-            if (!sprites[animated_sprites[i]].drawable) continue;
-            if (!sprites[animated_sprites[i]].updatable) continue;
-            int16_t other_x = sprites[animated_sprites[i]].view_info.x_pos;
-            if ((new_xpos > (other_x+sprites[animated_sprites[i]].view_info.width)) || (new_xpos + sprite->view_info.width < other_x)) {
-                continue;
-            }
-            int16_t other_y = sprites[animated_sprites[i]].view_info.y_pos;
-            if (new_ypos != other_y) {
-                continue;
-            }
-            sprite->object_dir = 0;
-        }
-    }
-
     if (sprite_alarm) {
         if (sprite->ego) {
             logic_set_flag(3);
@@ -431,6 +475,9 @@ void sprite_unanimate_all(void) {
         sprites[sprite_num].observe_blocks = true;
         sprites[sprite_num].updatable = true;
         sprites[sprite_num].step_size = 1;
+        sprites[sprite_num].step_time = 1;
+        sprites[sprite_num].step_count = 0;
+        sprites[sprite_num].loop_override = false;
         if (sprite_num == 0) {
             sprites[sprite_num].ego = true;
         } else {
@@ -445,17 +492,62 @@ void sprite_unanimate_all(void) {
 }
 
 void sprite_mark_drawable(uint8_t sprite_num) {
-    sprites[sprite_num].drawable = true;
+    agisprite_t sprite = sprites[sprite_num];
+    agisprite_t *testspr = &sprite;
+    sprite.drawable = true;
     if (sprite_num == 0) {
         logic_reset_flag(0);
         logic_reset_flag(1);
         logic_reset_flag(3);
     }
-    if (sprites[sprite_num].observe_horizon) {
-        if (sprites[sprite_num].view_info.y_pos <= horizon_line) {
-                sprites[sprite_num].view_info.y_pos = horizon_line + 1;
+    if (sprite.observe_horizon) {
+        if (sprite.view_info.y_pos <= horizon_line) {
+                sprite.view_info.y_pos = horizon_line + 1;
         }
     }
+    
+    uint8_t dir = 0;
+    uint8_t count = 1;
+    uint8_t size = 1;
+    int16_t xpos = sprite.view_info.x_pos;
+    int16_t ypos = sprite.view_info.y_pos;
+    while ((sprite_checkpos(testspr, xpos, ypos) != 0) || (sprite_checkpri(testspr, xpos, ypos)) || (sprite_checkcol(testspr, sprite_num, xpos, ypos))) {
+		switch (dir) {
+		case 0: // west
+            xpos--;
+			if (--count)
+				continue;
+			dir = 1;
+			break;
+		case 1: // south
+            ypos++;
+			if (--count)
+				continue;
+			dir = 2;
+			size++;
+			break;
+		case 2: // east
+            xpos++;
+			if (--count)
+				continue;
+			dir = 3;
+			break;
+		case 3: // north
+            ypos--;
+			if (--count)
+				continue;
+			dir = 0;
+			size++;
+			break;
+		default:
+			break;
+		}
+
+		count = size;
+    }
+    sprite.view_info.x_pos = xpos;
+    sprite.view_info.y_pos = ypos;
+    sprites[sprite_num] = sprite;
 }
 
 void sprite_setedge(uint8_t sprite_num, uint8_t edgenum) {
@@ -480,7 +572,6 @@ void sprite_set_view(uint8_t sprite_num, uint8_t view_number) {
 
     sprite.view_number = view_number;
     sprite.object_dir = 0;
-    sprite.view_info.cel_index = 0;
     sprite.cycle_time = 1;
     sprite.cycle_count = 1;
     sprite.end_of_loop = 0;
@@ -490,10 +581,32 @@ void sprite_set_view(uint8_t sprite_num, uint8_t view_number) {
         sprite.view_info.loop_index = 0;
     }
     select_loop(&sprite.view_info, sprite.view_info.loop_index);
-    if (sprite.view_info.x_pos > 160 - sprite.view_info.width) {
-        sprite.view_info.x_pos = 160 - sprite.view_info.width;
-    }
+    sprite_set_cel(&sprite, sprite.view_info.cel_index);
     sprites[sprite_num] = sprite;
+}
+
+void sprite_set_cel(agisprite_t *sprite, uint8_t cel_number) {
+    sprite->view_info.cel_index = cel_number;
+    if (sprite->observe_horizon) {
+        if (sprite->view_info.y_pos <= horizon_line) {
+                sprite->view_info.y_pos = horizon_line + 1;
+        }
+    }
+
+    uint8_t __far *loop_data = chipmem_base + sprite->view_info.loop_offset;
+    uint8_t __far *cell_ptr = loop_data + (cel_number * 2) + 1;
+    sprite->view_info.cel_offset = (*cell_ptr | ((*(cell_ptr + 1)) << 8));
+
+    uint8_t __far *cel_data = chipmem_base + sprite->view_info.cel_offset;
+    sprite->view_info.width  = cel_data[0];
+    sprite->view_info.height = cel_data[1];
+    if (sprite->view_info.y_pos - sprite->view_info.height + 1 <= 0) {
+        sprite->view_info.y_pos = sprite->view_info.height - 1;
+    }
+
+    if (sprite->view_info.x_pos + sprite->view_info.width >= 159) {
+        sprite->view_info.x_pos = 159 - sprite->view_info.width;
+    }
 }
 
 uint8_t sprite_get_view(uint8_t sprite_num) {
@@ -502,62 +615,68 @@ uint8_t sprite_get_view(uint8_t sprite_num) {
 
 void sprite_update_sprite(uint8_t sprite_num) {
     agisprite_t sprite = sprites[sprite_num]; 
-    uint8_t speed = 1;
-    switch (sprite.prg_movetype) {
-        case pmmNone:
-            speed = sprite.step_size;
-        break;
-        case pmmFollowWander:
-            sprite.prg_timer++;
-            if (sprite.prg_timer >= 5) {
+    sprite.step_count++;
+    if (sprite.step_count >= sprite.step_time) {
+        sprite.step_count = 0;
+        uint8_t speed = 1;
+        switch (sprite.prg_movetype) {
+            case pmmNone:
+                speed = sprite.step_size;
+            break;
+            case pmmFollowWander:
+                sprite.prg_timer++;
+                if (sprite.prg_timer >= 5) {
+                    sprite.prg_movetype = pmmFollow;
+                    speed = sprite.prg_speed;
+                    sprite.prg_x_destination = sprites[0].view_info.x_pos;
+                    sprite.prg_y_destination = sprites[0].view_info.y_pos;
+                    sprite_move_at_speed(&sprite);
+                }
+            case pmmWander:
+                speed = sprite.step_size;
+                if (sprite.object_dir == 0)
+                {
+                    uint8_t rand_dir = (abs(rand()) % 3);
+                    uint8_t new_dir = wander_pointers[sprite.prg_dir][rand_dir];
+                    sprite.object_dir = new_dir;
+                    sprite.prg_dir = new_dir;
+                }
+            break;
+            case pmmMoveTo:
+                speed = sprite.prg_speed;
+                sprite_move_at_speed(&sprite);
+            break;
+            case pmmFollow:
+                if (sprite.object_dir == 0) {
+                    sprite.prg_movetype = pmmFollowWander;
+                    sprite.prg_timer = 0;
+                } else {
+                    speed = sprite.prg_speed;
+                    sprite.prg_x_destination = sprites[0].view_info.x_pos;
+                    sprite.prg_y_destination = sprites[0].view_info.y_pos;
+                    sprite_move_at_speed(&sprite);
+                }
+            break;
+            case pmmFollowInit:
+                speed = sprite.prg_speed;
+                sprite.prg_x_destination = sprites[0].view_info.x_pos;
+                sprite.prg_y_destination = sprites[0].view_info.y_pos;
+                sprite_move_at_speed(&sprite);
                 sprite.prg_movetype = pmmFollow;
-                speed = sprite.prg_speed;
-                sprite.prg_x_destination = sprites[0].view_info.x_pos;
-                sprite.prg_y_destination = sprites[0].view_info.y_pos;
-                sprite_move_at_speed(&sprite);
-            }
-        case pmmWander:
-            speed = sprite.step_size;
-            if (sprite.object_dir == 0)
-            {
-                uint8_t rand_dir = (abs(rand()) % 3);
-                uint8_t new_dir = wander_pointers[sprite.prg_dir][rand_dir];
-                sprite.object_dir = new_dir;
-                sprite.prg_dir = new_dir;
-            }
-        break;
-        case pmmMoveTo:
-            speed = sprite.prg_speed;
-            sprite_move_at_speed(&sprite);
-        break;
-        case pmmFollow:
-            if (sprite.object_dir == 0) {
-                sprite.prg_movetype = pmmFollowWander;
-                sprite.prg_timer = 0;
-            } else {
-                speed = sprite.prg_speed;
-                sprite.prg_x_destination = sprites[0].view_info.x_pos;
-                sprite.prg_y_destination = sprites[0].view_info.y_pos;
-                sprite_move_at_speed(&sprite);
-            }
-        break;
-        case pmmFollowInit:
-            speed = sprite.prg_speed;
-            sprite.prg_x_destination = sprites[0].view_info.x_pos;
-            sprite.prg_y_destination = sprites[0].view_info.y_pos;
-            sprite_move_at_speed(&sprite);
-            sprite.prg_movetype = pmmFollow;
-        break;
-        default:
-        break;
-    }
+            break;
+            default:
+            break;
+        }
 
-    sprite_move(sprite_num, &sprite, speed);
-    if (!sprite.view_info.priority_override) {
-        sprite.view_info.priority = priorities[sprite.view_info.y_pos];
-    }
+        sprite_move(sprite_num, &sprite, speed);
+        if (!sprite.view_info.priority_override) {
+            sprite.view_info.priority = priorities[sprite.view_info.y_pos];
+        }
 
-    autoselect_loop(&sprite);
+        if (!sprite.loop_override) {
+            autoselect_loop(&sprite);
+        }
+    }
 
     sprite.cycle_count--;
     if (sprite.cycle_count == 0) {
@@ -565,16 +684,17 @@ void sprite_update_sprite(uint8_t sprite_num) {
         if (sprite.cycling) {
             if (sprite.reverse) {
                 if (sprite.view_info.cel_index == 0) {
-                    sprite.view_info.cel_index = sprite.view_info.number_of_cels;
+                    sprite_set_cel(&sprite, sprite.view_info.number_of_cels);
                 } else {
-                    sprite.view_info.cel_index--;
+                    sprite_set_cel(&sprite, sprite.view_info.cel_index - 1);
                 }
 
             } else {
-                sprite.view_info.cel_index++;
-                if (sprite.view_info.cel_index >= sprite.view_info.number_of_cels) {
-                    sprite.view_info.cel_index = 0;
-                }
+                if (sprite.view_info.cel_index >= (sprite.view_info.number_of_cels - 1)) {
+                    sprite_set_cel(&sprite, 0);
+                } else {
+                    sprite_set_cel(&sprite, sprite.view_info.cel_index + 1);
+                } 
             }
         }
         if (sprite.end_of_loop > 0) {

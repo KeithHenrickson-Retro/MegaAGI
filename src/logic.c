@@ -209,7 +209,7 @@ bool logic_run_low(void) {
             break;
         }
         case 0x12: {
-            // new.screen
+            // new.room
             VICIV.bordercol = COLOR_GREEN;
             sound_stop();
             gfx_hold_flip(true);
@@ -259,7 +259,7 @@ bool logic_run_low(void) {
             } else {
                 logic_stack[logic_stack_ptr].free_offset = 0;
             }
-            program_counter = chipmem_base + (logic_infos[logic_num].offset + 2);
+            program_counter = chipmem_base + (logic_infos[logic_num].scan_start);
             break;
         }
         case 0x17: {
@@ -274,7 +274,7 @@ bool logic_run_low(void) {
             } else {
                 logic_stack[logic_stack_ptr].free_offset = 0;
             }
-            program_counter = chipmem_base + (logic_infos[logic_num].offset + 2);
+            program_counter = chipmem_base + (logic_infos[logic_num].scan_start);
             break;
         }
         case 0x18: {
@@ -443,15 +443,34 @@ bool logic_run_low(void) {
             program_counter += 3;
             break;
         }
+        case 0x2d: {
+            // fix.loop
+            agisprite_t sprite = sprites[program_counter[1]];
+            sprite.loop_override = 1;
+            select_loop(&sprite.view_info, logic_vars[program_counter[2]]);
+            sprites[program_counter[1]] = sprite;
+            program_counter += 3;
+        }
+        case 0x2e: {
+            // release.loop
+            agisprite_t sprite = sprites[program_counter[1]];
+            sprite.loop_override = 0;
+            sprites[program_counter[1]] = sprite;
+            program_counter += 3;
+        }
         case 0x2F: {
             // set.cel
-            sprites[program_counter[1]].view_info.cel_index = program_counter[2];
+            agisprite_t sprite = sprites[program_counter[1]];
+            sprite_set_cel(&sprite, program_counter[2]);
+            sprites[program_counter[1]] = sprite;
             program_counter += 3;
             break;
         }
         case 0x30: {
             // set.cel.v
-            sprites[program_counter[1]].view_info.cel_index = logic_vars[program_counter[2]];
+            agisprite_t sprite = sprites[program_counter[1]];
+            sprite_set_cel(&sprite, logic_vars[program_counter[2]]);
+            sprites[program_counter[1]] = sprite;
             program_counter += 3;
             break;
         }
@@ -516,6 +535,11 @@ bool logic_run_low(void) {
             program_counter += 2;
             break;
         }
+        case 0x3C: {
+            // force.update
+            program_counter += 2;
+            break;
+        }
         case 0x3D: {
             sprites[program_counter[1]].observe_horizon = false;
             program_counter += 2;
@@ -553,6 +577,7 @@ bool logic_run_low(void) {
             break;
         }
         case 0x43: {
+            // ignore.objs
             sprites[program_counter[1]].observe_object_collisions = false;
             program_counter += 2;
             break;
@@ -724,7 +749,8 @@ bool logic_test_commands(void) {
             break;
         case 0x0D:
             // havekey test
-            result = (ASCIIKEY != 0);
+            logic_vars[19] = ASCIIKEY;
+            result = (logic_vars[19] != 0);
             program_counter += 1;
             break;
         case 0x0E:
@@ -867,6 +893,12 @@ bool logic_test(void) {
 
 bool logic_run_high(void) {
     switch (*program_counter) {
+        case 0x50: {
+            // step.time
+            sprites[program_counter[1]].step_time = program_counter[2];
+            program_counter += 3;
+            break;
+        }
         case 0x51: {
             // move.obj
             sprites[program_counter[1]].prg_movetype = pmmMoveTo;
@@ -879,6 +911,7 @@ bool logic_run_high(void) {
             }
             sprites[program_counter[1]].prg_distance = sprites[program_counter[1]].prg_speed * sprites[program_counter[1]].prg_speed;
             sprites[program_counter[1]].prg_complete_flag = program_counter[5];
+            logic_reset_flag(program_counter[5]);
             sprites[program_counter[1]].frozen = false;
             sprites[program_counter[1]].updatable = true;
             if (program_counter[1] == 0) {
@@ -900,6 +933,7 @@ bool logic_run_high(void) {
             }
             sprites[program_counter[1]].prg_distance = sprites[program_counter[1]].prg_speed * sprites[program_counter[1]].prg_speed;
             sprites[program_counter[1]].prg_complete_flag = program_counter[5];
+            logic_reset_flag(program_counter[5]);
             sprites[program_counter[1]].frozen = false;
             sprites[program_counter[1]].updatable = true;
             if (program_counter[1] == 0) {
@@ -1334,6 +1368,18 @@ bool logic_run_high(void) {
             program_counter += 2;
             break;
         }
+        case 0x91: {
+            // set.scan.start
+            program_counter += 1;
+            logic_infos[logic_num].scan_start = (uint16_t)program_counter;
+            break;
+        }
+        case 0x92: {
+            // reset.scan.start
+            logic_infos[logic_num].scan_start = logic_infos[logic_num].offset + 2;
+            program_counter += 1;
+            break;
+        }
         case 0x93: {
             // reposition.to
             sprites[program_counter[1]].view_info.x_pos = program_counter[2];
@@ -1412,6 +1458,30 @@ bool logic_run_high(void) {
             program_counter += 1;
             break;
         }
+        case 0xA5: {
+            // mul.n
+            logic_vars[program_counter[1]] *= program_counter[2];
+            program_counter += 3;
+            break;
+        }
+        case 0xA6: {
+            // mul.v
+            logic_vars[program_counter[1]] *= logic_vars[program_counter[2]];
+            program_counter += 3;
+            break;
+        }
+        case 0xA7: {
+            // div.n
+            logic_vars[program_counter[1]] /= program_counter[2];
+            program_counter += 3;
+            break;
+        }
+        case 0xA8: {
+            // div.v
+            logic_vars[program_counter[1]] /= logic_vars[program_counter[2]];
+            program_counter += 3;
+            break;
+        }
         case 0xfe: {
             int16_t branch_bytes = program_counter[2];
             branch_bytes = (branch_bytes << 8) | program_counter[1]; 
@@ -1442,7 +1512,7 @@ bool logic_run_high(void) {
 void logic_run(void) {
     logic_num = 0;
     logic_stack_ptr = 16;
-    program_counter = chipmem_base + (logic_infos[logic_num].offset + 2);
+    program_counter = chipmem_base + (logic_infos[logic_num].scan_start);
     while(1) {
         if (debug) {
             textscr_print_ascii(0,1,(uint8_t *)"A:%x %X", logic_num, (uint32_t)program_counter);
@@ -1475,6 +1545,7 @@ void logic_load(uint8_t logic_num) {
     }
 
     logic_infos[logic_num].offset = volume_load_object(voLogic, logic_num, &length);
+    logic_infos[logic_num].scan_start = logic_infos[logic_num].offset + 2;
     if (logic_infos[logic_num].offset == 0) {
         textscr_print_ascii(0, 0, (uint8_t *)"FAULT: Failed to load logic %d.", logic_num);
         return;

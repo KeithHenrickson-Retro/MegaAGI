@@ -42,6 +42,9 @@ typedef struct {
     bool observe_horizon;
     bool observe_blocks;
     uint8_t step_size;
+    uint8_t step_time;
+    uint8_t step_count;
+    bool loop_override;
     bool on_water;
     bool on_land;
     bool frozen;
@@ -77,6 +80,7 @@ void sprite_erase(uint8_t sprite_num);
 void sprite_draw(uint8_t sprite_num);
 uint8_t sprite_get_view(uint8_t sprite_num);
 void sprite_set_view(uint8_t sprite_num, uint8_t view_number);
+void sprite_set_cel(agisprite_t *sprite, uint8_t cel_number);
 void sprite_stop_all(void);
 void sprite_unanimate_all(void);
 void sprite_mark_drawable(uint8_t sprite_num);

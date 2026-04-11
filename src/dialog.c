@@ -267,6 +267,7 @@ void dialog_draw_itemlist_internal(void) {
         while(ASCIIKEY == 0);
         uint8_t keypress = ASCIIKEY;
         ASCIIKEY = 0;
+        logic_vars[19] = 0;
         if (logic_flag_isset(13)) {
             exit = dialog_handleitemselect_input_internal(keypress);
         } else if ((keypress == 0x1b) || (keypress == 0x0d)) {
@@ -660,6 +661,7 @@ static bool dialog_show_internal(bool accept_input, bool ok_cancel, bool draw_on
         command_buffer[0] = 0;
         cmd_buf_ptr=0;
         ASCIIKEY = 0;
+        logic_vars[19] = 0;
         input_line = y_start;
         input_start_column = x_start + 1;
         input_max_length = 12;
@@ -690,6 +692,7 @@ static bool dialog_show_internal(bool accept_input, bool ok_cancel, bool draw_on
                 ASCIIKEY = 0;
                 while (!dialog_nokeys_internal()) {
                     ASCIIKEY = 0;
+                    logic_vars[19] = 0;
                 }
                 if (asciival == 0x1b) {
                     dialog_close();
@@ -807,6 +810,7 @@ bool dialog_proc(void) {
                 status_line_score = 255;
                 while (!dialog_nokeys_internal()) {
                     ASCIIKEY = 0;
+                    logic_vars[19] = 0;
                 }
             } else {
                 retval = true;
@@ -820,6 +824,7 @@ bool dialog_proc(void) {
                 status_line_score = 255;
                 while (!dialog_nokeys_internal()) {
                     ASCIIKEY = 0;
+                    logic_vars[19] = 0;
                 }
             } else {
                 retval = true;
@@ -845,6 +850,7 @@ void dialog_draw_menubar(bool mouse_trigger) {
         dialog_draw_menubar_internal();
         while (!dialog_nokeys_internal()) {
             ASCIIKEY = 0;
+            logic_vars[19] = 0;
         }
     }
 }
@@ -949,6 +955,7 @@ bool dialog_handlemenuinput(void) {
     uint8_t ascii_key = ASCIIKEY;
     if (ascii_key != 0) {
         ASCIIKEY = 0;
+        logic_vars[19] = ascii_key;
         select_gui_mem();
         return dialog_handlemenuinput_internal(ascii_key);
     }
@@ -961,6 +968,7 @@ bool dialog_handleinput(bool force_accept, bool mapkeys, bool *cancelled) {
         uint8_t modkey = MODKEY;
         if (ascii_key != 0) {
             ASCIIKEY = 0;
+            logic_vars[19] = ascii_key;
             select_gui_mem();
             if (mapkeys) {
                 dialog_handlemappedkey_internal(ascii_key, modkey & 0x10);
@@ -987,6 +995,7 @@ bool dialog_handleinput(bool force_accept, bool mapkeys, bool *cancelled) {
     uint8_t modkey = MODKEY;
     if (ascii_key != 0) {
         ASCIIKEY = 0;
+        logic_vars[19] = ascii_key;
         select_gui_mem();
         if (mapkeys) {
             if (dialog_handlemappedkey_internal(ascii_key, modkey & 0x10)) {
@@ -1049,6 +1058,7 @@ void dialog_get_string(uint8_t destination_str, uint8_t prompt, uint8_t row, uin
     command_buffer[0] = 0;
     cmd_buf_ptr=0;
     ASCIIKEY = 0;
+    logic_vars[19] = 0;
     input_line = row;
     input_max_length = max;
 
@@ -1069,6 +1079,7 @@ void dialog_clear_keyboard(void) {
         command_buffer[0] = 0;
         cmd_buf_ptr=0;
         ASCIIKEY = 0;
+        logic_vars[19] = 0;
         input_line = 22;
         input_start_column = 2;
         input_max_length = 37;

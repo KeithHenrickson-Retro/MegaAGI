@@ -24,6 +24,7 @@
 #include <calypsi/intrinsics6502.h>
 #include <mega65.h>
 
+#include "clock.h"
 #include "gfx.h"
 #include "dialog.h"
 #include "irq.h"
@@ -284,6 +285,7 @@ void run_loop(void) {
                 joyports_poll();
                 handle_movement_joystick();
                 handle_movement_mouse();
+                clocksync();
                 logic_run();
                 logic_reset_flag(11);
                 sprite_updateanddraw();

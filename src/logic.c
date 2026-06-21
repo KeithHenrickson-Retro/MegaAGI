@@ -895,7 +895,7 @@ bool logic_run_high(void) {
     switch (*program_counter) {
         case 0x50: {
             // step.time
-            sprites[program_counter[1]].step_time = program_counter[2];
+            sprites[program_counter[1]].step_time = logic_vars[program_counter[2]];
             program_counter += 3;
             break;
         }

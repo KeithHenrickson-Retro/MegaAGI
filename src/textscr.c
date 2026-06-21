@@ -274,10 +274,17 @@ void textscr_set_printpos(uint8_t x, uint8_t y) {
 }
 
 void textscr_print_asciistr(uint8_t x, uint8_t y, uint8_t __far *output) {
-  textscr_set_printpos(x,y);
+  uint8_t line = y;
+  textscr_set_printpos(x,line);
 
   uint8_t __far *ascii_string = output;
   while (*ascii_string != 0) {
+    if (*ascii_string == 0x0a) {
+      line++;
+      textscr_set_printpos(0, line);
+      ascii_string++;
+      continue;
+    }
     textscr_print_asciichar(*ascii_string);
     ascii_string++;
   }

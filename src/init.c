@@ -29,6 +29,7 @@
 #include "parser.h"
 #include "disk.h"
 #include "volume.h"
+#include "sound.h"
 uint32_t __attribute__((zpage)) my_quad;
 
 #pragma clang section bss = "extradata"
@@ -240,6 +241,9 @@ void init_system(void)
     *mousedest = mouse_sprite_src[ctr];
     mousedest++;
   }
+
+  sound_init_opl();
+
   init_agi_files();
 }
 

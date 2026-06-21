@@ -325,8 +325,6 @@ void draw_pic(uint8_t pic_num, bool clear_screen) {
 }
 
 void pic_add_to_pic(uint8_t pic_command) {
-    views_in_pic++;
-
     view_set(&object_view, add_to_pic_commands[pic_command].view_number);
     select_loop(&object_view, add_to_pic_commands[pic_command].loop_index);
     object_view.cel_index = add_to_pic_commands[pic_command].cel_index;

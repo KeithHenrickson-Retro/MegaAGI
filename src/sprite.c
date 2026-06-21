@@ -258,7 +258,7 @@ uint8_t sprite_checkpos(agisprite_t *sprite, int16_t new_xpos, int16_t new_ypos)
     uint8_t object_border = 0;
     if (new_xpos <= -1) {
         object_border = 4;
-    } else if (new_xpos >= (160 - sprite->view_info.width)) {
+    } else if (new_xpos > (160 - sprite->view_info.width)) {
         object_border = 2;
     } 
     
@@ -604,8 +604,8 @@ void sprite_set_cel(agisprite_t *sprite, uint8_t cel_number) {
         sprite->view_info.y_pos = sprite->view_info.height - 1;
     }
 
-    if (sprite->view_info.x_pos + sprite->view_info.width >= 159) {
-        sprite->view_info.x_pos = 159 - sprite->view_info.width;
+    if (sprite->view_info.x_pos + sprite->view_info.width >= 160) {
+        sprite->view_info.x_pos = 160 - sprite->view_info.width;
     }
 }
 

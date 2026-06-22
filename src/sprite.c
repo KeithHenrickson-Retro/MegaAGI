@@ -285,6 +285,8 @@ bool sprite_checkpri(agisprite_t *sprite, int16_t new_xpos, int16_t new_ypos) {
                 } else if (control_prio == 1) {
                     if (sprite->observe_blocks) {
                         sprite->object_dir = 0;
+                    } else {
+                        control_line = false;
                     }
                 } else if (control_prio == 2) {
                     sprite_alarm = true;

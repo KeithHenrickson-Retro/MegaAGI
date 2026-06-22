@@ -45,6 +45,7 @@
 
 volatile uint8_t frame_counter;
 volatile bool run_engine;
+volatile bool game_timeslot_ready;
 bool quit_flag;
 
 #pragma clang section bss="banked_bss" data="eh_data" rodata="eh_rodata" text="eh_text"
@@ -84,6 +85,7 @@ void engine_askdisk_dialog(uint8_t disk_number) {
 
 volatile uint8_t run_cycles;
 volatile bool engine_running;
+volatile bool game_timeslot_ready;
 bool status_line_enabled;
 uint8_t status_line_score;
 bool status_line_sound;
@@ -271,6 +273,7 @@ void run_loop(void) {
         while(!run_engine);
         engine_running = true;
         run_engine = false;
+        game_timeslot_ready = false;
 
         run_cycles++;
         select_engine_enginehigh_mem();
@@ -329,10 +332,9 @@ void engine_interrupt_handler(void) {
         if (!engine_running) {
             gfx_flippage();
             run_engine = true;
-            frame_counter = 0;
-        } else {
-            frame_counter = 3;
         }
+        game_timeslot_ready = true;
+        frame_counter = 0;
     }
     *irr = *irr; // ack interrupt
 }

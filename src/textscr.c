@@ -313,7 +313,7 @@ void textscr_clear_line(uint8_t y) {
 }
 
 void textscr_set_textmode(bool enable_text) {
-  if (enable_text && !game_text) {
+  if (enable_text) {
     textscr_set_color(COLOR_WHITE, COLOR_BLACK);
     for (uint8_t i = 0; i < 25; i++) {
       textscr_print_ascii(0, i, (uint8_t *)"%p40");

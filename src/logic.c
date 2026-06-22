@@ -748,9 +748,13 @@ bool logic_test_commands(void) {
             program_counter += 2;
             break;
         case 0x0D:
-            // havekey test
-            logic_vars[19] = ASCIIKEY;
-            result = (logic_vars[19] != 0);
+            // have.key test
+            if (logic_vars[19] != 0) {
+                result = true;
+            } else {
+                logic_vars[19] = ASCIIKEY;
+                result = (logic_vars[19] != 0);
+            }
             program_counter += 1;
             break;
         case 0x0E:
@@ -1265,6 +1269,19 @@ bool logic_run_high(void) {
                 block_active = 0;
                 horizon_line = 36;
                 status_line_score = 255;
+
+                uint8_t __huge *object_ptr = attic_memory + object_data_offset;
+                uint8_t number_of_objects = object_ptr[0];
+                number_of_objects |= object_ptr[1] << 8;
+                number_of_objects /= 3;
+                for (int counter = 0; counter < 256; counter++) {
+                    if (counter < number_of_objects) {
+                        object_locations[counter] = object_ptr[((counter + 1) * 3) + 2];
+                    } else {
+                        object_locations[counter] = 0;
+                    }
+                }
+
                 bool soundon = logic_flag_isset(9);
                 for (int counter = 0; counter < 256; counter++) {
                     logic_vars[counter] = 0;

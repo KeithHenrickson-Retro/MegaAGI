@@ -44,5 +44,6 @@ struct __F018 {
 
 extern uint8_t __far *global_strings;
 extern volatile bool run_engine;
+extern volatile bool game_timeslot_ready;
 
 #endif

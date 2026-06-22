@@ -1065,8 +1065,8 @@ void dialog_get_string(uint8_t destination_str, uint8_t prompt, uint8_t row, uin
     input_start_column = column + textscr_print_ascii(column, row, (uint8_t *)"%M", prompt);
 
     while(!dialog_handleinput(true, false, NULL)) {
-        while(!run_engine);
-        run_engine = false;
+        while(!game_timeslot_ready);
+        game_timeslot_ready = false;
     }
     command_buffer[cmd_buf_ptr] = 0;
     cmd_buf_ptr = 0;

@@ -99,6 +99,7 @@ static const uint8_t joystick_direction_to_agi[16] = {
 void engine_bridge_add_to_pic(uint8_t add_command_num) {
     select_picdraw_mem();
     pic_add_to_pic(add_command_num);
+    select_engine_enginehigh_mem();
     select_gamesave_mem();
 }
 

@@ -279,14 +279,13 @@ bool sprite_checkpri(agisprite_t *sprite, int16_t new_xpos, int16_t new_ypos) {
         for (int16_t control_xpos = new_xpos; control_xpos < (new_xpos + sprite->view_info.width); control_xpos++) {
             uint8_t control_prio = gfx_getprio(control_xpos, new_ypos);
             if (control_prio < 4) {
-                control_line = true;
                 if (control_prio == 0) {
                     sprite->object_dir = 0;
+                    control_line = true;
                 } else if (control_prio == 1) {
                     if (sprite->observe_blocks) {
                         sprite->object_dir = 0;
-                    } else {
-                        control_line = false;
+                        control_line = true;
                     }
                 } else if (control_prio == 2) {
                     sprite_alarm = true;
@@ -299,18 +298,19 @@ bool sprite_checkpri(agisprite_t *sprite, int16_t new_xpos, int16_t new_ypos) {
             }
         }
 
-        if (control_line) {
-            if (water_prio && sprite->on_water) {
-                control_line = false;
-            } else if (!water_prio && sprite->on_land) {
-                control_line = false;
+        if (!control_line) {
+            if (!water_prio && sprite->on_water) {
+                control_line = true;
+            } else if (water_prio && sprite->on_land) {
+                control_line = true;
             }
         }
 
         if (block_active) {
             if (sprite->observe_blocks) {
-                bool sprite_entered = ((new_xpos < block_x2) && (new_xpos + sprite->view_info.width > block_x1) && (new_ypos >= block_y1) && (new_ypos <= block_y2));
+                bool sprite_entered = ((new_xpos < block_x2) && (new_xpos > block_x1) && (new_ypos >= block_y1) && (new_ypos <= block_y2));
                 if (sprite_entered) {
+                    control_line = true;
                     sprite->object_dir = 0;
                 }
             }
@@ -488,6 +488,7 @@ void sprite_unanimate_all(void) {
         sprites[sprite_num].prg_movetype = pmmNone;
         sprites[sprite_num].on_water = false;
         sprites[sprite_num].on_land = false;
+        sprites[sprite_num].object_dir = 0;
         animated_sprites[sprite_num] = 0;
     }
     animated_sprite_count = 0;
@@ -572,7 +573,6 @@ void sprite_setedge(uint8_t sprite_num, uint8_t edgenum) {
 void sprite_set_view(uint8_t sprite_num, uint8_t view_number) {
     agisprite_t sprite = sprites[sprite_num];
 
-    sprite.view_number = view_number;
     sprite.object_dir = 0;
     sprite.cycle_time = 1;
     sprite.cycle_count = 1;
@@ -595,11 +595,15 @@ void sprite_set_cel(agisprite_t *sprite, uint8_t cel_number) {
         }
     }
 
+    if (views[sprite->view_info.view_index] == 0) {
+        return;
+    }
+    
     uint8_t __far *loop_data = chipmem_base + sprite->view_info.loop_offset;
     uint8_t __far *cell_ptr = loop_data + (cel_number * 2) + 1;
-    sprite->view_info.cel_offset = (*cell_ptr | ((*(cell_ptr + 1)) << 8));
+    uint16_t cel_offset = (*cell_ptr | ((*(cell_ptr + 1)) << 8));
 
-    uint8_t __far *cel_data = chipmem_base + sprite->view_info.cel_offset;
+    uint8_t __far *cel_data = chipmem_base + cel_offset;
     sprite->view_info.width  = cel_data[0];
     sprite->view_info.height = cel_data[1];
     if (sprite->view_info.y_pos - sprite->view_info.height + 1 <= 0) {
@@ -612,7 +616,7 @@ void sprite_set_cel(agisprite_t *sprite, uint8_t cel_number) {
 }
 
 uint8_t sprite_get_view(uint8_t sprite_num) {
-    return sprites[sprite_num].view_number;
+    return sprites[sprite_num].view_info.view_index;
 }
 
 void sprite_update_sprite(uint8_t sprite_num) {

@@ -23,11 +23,10 @@
 
 typedef struct view_info {
     uint16_t backbuffer_offset;
-    uint16_t view_offset;
+    uint8_t view_index;
     uint8_t loop_index;
     uint16_t loop_offset;
     uint8_t cel_index;
-    uint16_t cel_offset;
     uint8_t number_of_cels;
     uint8_t number_of_loops;
     uint8_t width;

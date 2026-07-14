@@ -354,8 +354,18 @@ bool logic_run_low(void) {
             if (!found) {
                 animated_sprites[animated_sprite_count] = program_counter[1];
                 animated_sprite_count++;
+                sprites[program_counter[1]].prg_movetype = pmmNone;
+                sprites[program_counter[1]].object_dir = 0;
+                sprites[program_counter[1]].cycling = true;
             }
+
             program_counter += 2;
+            break;
+        }
+        case 0x22: {
+            // unanimate.all
+            sprite_unanimate_all();
+            program_counter += 1;
             break;
         }
         case 0x23: {
@@ -494,7 +504,7 @@ bool logic_run_low(void) {
         }
         case 0x34: {
             // current.view
-            logic_vars[program_counter[2]] = sprites[program_counter[1]].view_number;
+            logic_vars[program_counter[2]] = sprites[program_counter[1]].view_info.view_index;
             program_counter += 3;
             break;
         }

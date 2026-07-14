@@ -72,9 +72,9 @@ static uint8_t rle_count;
 bool draw_cel_forwards(view_info_t *info, uint8_t cel) {
     uint8_t __far *loop_data = chipmem_base + info->loop_offset;
     uint8_t __far *cell_ptr = loop_data + (cel * 2) + 1;
-    info->cel_offset = (*cell_ptr | ((*(cell_ptr + 1)) << 8));
+    uint16_t cel_offset = (*cell_ptr | ((*(cell_ptr + 1)) << 8));
 
-    uint8_t __far *cel_data = chipmem_base + info->cel_offset;
+    uint8_t __far *cel_data = chipmem_base + cel_offset;
 
     drawview_trans = colorval[cel_data[2] & 0x0f];
     drawview_left = info->x_pos;
@@ -148,9 +148,9 @@ bool draw_cel_forwards(view_info_t *info, uint8_t cel) {
 bool draw_cel_backwards(view_info_t *info, uint8_t cel) {
     uint8_t __far *loop_data = chipmem_base + info->loop_offset;
     uint8_t __far *cell_ptr = loop_data + (cel * 2) + 1;
-    info->cel_offset = (*cell_ptr | ((*(cell_ptr + 1)) << 8));
+    uint16_t cel_offset = (*cell_ptr | ((*(cell_ptr + 1)) << 8));
 
-    uint8_t __far *cel_data = chipmem_base + info->cel_offset;
+    uint8_t __far *cel_data = chipmem_base + cel_offset;
 
     drawview_trans = colorval[cel_data[2] & 0x0f];
     drawview_left = info->x_pos;
@@ -226,9 +226,9 @@ bool draw_cel(view_info_t *info, uint8_t cel) {
 
     uint8_t __far *loop_data = chipmem_base + info->loop_offset;
     uint8_t __far *cell_ptr = loop_data + (cel * 2) + 1;
-    info->cel_offset = (*cell_ptr | ((*(cell_ptr + 1)) << 8));
+    uint16_t cel_offset = (*cell_ptr | ((*(cell_ptr + 1)) << 8));
 
-    uint8_t __far *cel_data = chipmem_base + info->cel_offset;
+    uint8_t __far *cel_data = chipmem_base + cel_offset;
     info->width  = cel_data[0];
     info->height = cel_data[1];
 
@@ -418,7 +418,11 @@ void unpack_view(uint8_t view_num, uint8_t __huge *view_location) {
 #pragma clang section bss="banked_bss" data="ls_spritedata" rodata="ls_spriterodata" text="ls_spritetext"
 
 bool select_loop(view_info_t *info, uint8_t loop_num) {
-    uint8_t __far *view_data = chipmem_base + info->view_offset;
+    uint16_t view_offset = views[info->view_index];
+    if (view_offset == 0) {
+        return false;
+    }
+    uint8_t __far *view_data = chipmem_base + view_offset;
     info->loop_index = loop_num;
     if (loop_num < info->number_of_loops) {
         uint8_t __far *loop_ptr = view_data + (loop_num * 2) + 1;
@@ -430,9 +434,9 @@ bool select_loop(view_info_t *info, uint8_t loop_num) {
             info->cel_index = 0;
         }
         uint8_t __far *cell_ptr = loop_data + 1;
-        info->cel_offset = (*cell_ptr | ((*(cell_ptr + 1)) << 8));
+        uint16_t cel_offset = (*cell_ptr | ((*(cell_ptr + 1)) << 8));
 
-        uint8_t __far *cel_data = chipmem_base + info->cel_offset;
+        uint8_t __far *cel_data = chipmem_base + cel_offset;
         info->width  = cel_data[0];
         info->height = cel_data[1];
         return true;
@@ -441,14 +445,18 @@ bool select_loop(view_info_t *info, uint8_t loop_num) {
 }
 
 void view_set(view_info_t *info, uint8_t view_num) {
-    info->view_offset = views[view_num];
-    uint8_t __far *view_data = chipmem_base + info->view_offset;
+    info->view_index = view_num;
+    uint16_t view_offset = views[view_num];
+    if (view_offset == 0) {
+        return;
+    }
+    uint8_t __far *view_data = chipmem_base + view_offset;
     info->number_of_loops = view_data[0];
     uint8_t __far *loop_ptr = view_data + (info->loop_index * 2) + 1;
     uint16_t loop_offset = *loop_ptr | ((*(loop_ptr + 1)) << 8);
     uint8_t __far *loop_data = chipmem_base + loop_offset;
     info->number_of_cels = loop_data[0];
-    info->desc_offset = info->view_offset + (info->number_of_loops * 2) + 1;
+    info->desc_offset = view_offset + (info->number_of_loops * 2) + 1;
     info->priority_set = false;
 }
 

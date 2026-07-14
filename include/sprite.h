@@ -33,8 +33,6 @@ typedef enum {
 typedef struct {
     view_info_t view_info;
 
-    uint8_t view_number;
-
     uint8_t object_dir;
     bool drawable;
     bool updatable;

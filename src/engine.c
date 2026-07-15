@@ -47,6 +47,7 @@ volatile uint8_t frame_counter;
 volatile bool run_engine;
 volatile bool game_timeslot_ready;
 bool quit_flag;
+static bool mouse_hidden = false;
 
 #pragma clang section bss="banked_bss" data="eh_data" rodata="eh_rodata" text="eh_text"
 void engine_show_welcome_text(void) {
@@ -185,6 +186,11 @@ void handle_movement_joystick(void) {
             sprites[0].object_dir = 0;
             joy_pressed = true;
         }
+        if (!mouse_hidden) {
+
+            mouse_hidden = true;
+            mouse_hide();
+        }
     } else {
         joy_pressed = false;
     }
@@ -192,6 +198,10 @@ void handle_movement_joystick(void) {
 
 void handle_movement_mouse(void) {
     if (mouse_leftclick == 1) {
+        if (mouse_hidden) {
+            mouse_hidden = false;
+            mouse_show();
+        }
         if (mouse_down == false) {
             if (mouse_ypos > 8) {
                 if (!player_control) {

@@ -276,7 +276,7 @@ bool sprite_checkpri(agisprite_t *sprite, int16_t new_xpos, int16_t new_ypos) {
     bool control_line = false;
     bool water_prio = false;
     if (sprite->view_info.priority != 0x0f) {
-        for (int16_t control_xpos = new_xpos; control_xpos < (new_xpos + sprite->view_info.width); control_xpos++) {
+        for (int16_t control_xpos = new_xpos; control_xpos < (new_xpos + sprite->view_info.width - 1); control_xpos++) {
             uint8_t control_prio = gfx_getprio(control_xpos, new_ypos);
             if (control_prio < 4) {
                 if (control_prio == 0) {
@@ -409,7 +409,7 @@ uint8_t sprite_move(uint8_t spr_num, agisprite_t *sprite, uint8_t speed) {
             break;
     }
     if ((view_dx == 0) && (view_dy == 0)) {
-         sprite->object_dir = 0;
+        sprite->object_dir = 0;
     }
 
     sprite_alarm = false;
@@ -498,6 +498,7 @@ void sprite_mark_drawable(uint8_t sprite_num) {
     agisprite_t sprite = sprites[sprite_num];
     agisprite_t *testspr = &sprite;
     sprite.drawable = true;
+    sprite.updatable = true;
     if (sprite_num == 0) {
         logic_reset_flag(0);
         logic_reset_flag(1);
@@ -573,7 +574,6 @@ void sprite_setedge(uint8_t sprite_num, uint8_t edgenum) {
 void sprite_set_view(uint8_t sprite_num, uint8_t view_number) {
     agisprite_t sprite = sprites[sprite_num];
 
-    sprite.object_dir = 0;
     sprite.cycle_time = 1;
     sprite.cycle_count = 1;
     sprite.end_of_loop = 0;

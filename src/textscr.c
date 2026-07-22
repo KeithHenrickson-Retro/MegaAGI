@@ -291,23 +291,27 @@ void textscr_print_asciistr(uint8_t x, uint8_t y, uint8_t __far *output) {
 }
 
 void textscr_clear_line(uint8_t y) {
-  if ((y > 0) && (y <= 21)) {
-    for (int x = 0; x < 40; x++) {
-      screen_memory_0[y].backtiles_chars[x] = 0x0020;        
-      screen_memory_1[y].backtiles_chars[x] = 0x0020;
-      screen_memory_0[y].foretiles_chars[x] = 0x0020;        
-      screen_memory_1[y].foretiles_chars[x] = 0x0020;
-      color_memory[y].foretiles_chars[x] = 0x0100;       
-      color_memory[y].backtiles_chars[x] = 0x0000;       
-    }
+  if (game_text) {
+      textscr_print_ascii(0, y, (uint8_t *)"%p40");
   } else {
-    for (int x = 0; x < 40; x++) {
-      color_memory[y].backtiles_chars[x] = 0x0000;       
-      screen_memory_0[y].backtiles_chars[x] = 0x00a0;        
-      screen_memory_1[y].backtiles_chars[x] = 0x00a0;
-      screen_memory_0[y].foretiles_chars[x] = 0x0020;        
-      screen_memory_1[y].foretiles_chars[x] = 0x0020;
-      color_memory[y].foretiles_chars[x] = 0x0100;
+    if ((y > 0) && (y <= 21)) {
+      for (int x = 0; x < 40; x++) {
+        screen_memory_0[y].backtiles_chars[x] = 0x0020;        
+        screen_memory_1[y].backtiles_chars[x] = 0x0020;
+        screen_memory_0[y].foretiles_chars[x] = 0x0020;        
+        screen_memory_1[y].foretiles_chars[x] = 0x0020;
+        color_memory[y].foretiles_chars[x] = 0x0100;       
+        color_memory[y].backtiles_chars[x] = 0x0000;       
+      }
+    } else {
+      for (int x = 0; x < 40; x++) {
+        color_memory[y].backtiles_chars[x] = 0x0000;       
+        screen_memory_0[y].backtiles_chars[x] = 0x00a0;        
+        screen_memory_1[y].backtiles_chars[x] = 0x00a0;
+        screen_memory_0[y].foretiles_chars[x] = 0x0020;        
+        screen_memory_1[y].foretiles_chars[x] = 0x0020;
+        color_memory[y].foretiles_chars[x] = 0x0100;
+      }
     }
   }
 }
@@ -315,10 +319,10 @@ void textscr_clear_line(uint8_t y) {
 void textscr_set_textmode(bool enable_text) {
   if (enable_text) {
     textscr_set_color(COLOR_WHITE, COLOR_BLACK);
-    for (uint8_t i = 0; i < 25; i++) {
-      textscr_print_ascii(0, i, (uint8_t *)"%p40");
-    }
     game_text = true;
+    for (uint8_t i = 0; i < 25; i++) {
+      textscr_clear_line(i);
+    }
   } else if (!enable_text && game_text) {
     game_text = false;
     for (uint8_t i = 0; i < 25; i++) {

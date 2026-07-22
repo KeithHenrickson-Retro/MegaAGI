@@ -472,6 +472,7 @@ bool logic_run_low(void) {
             // set.cel
             agisprite_t sprite = sprites[program_counter[1]];
             sprite_set_cel(&sprite, program_counter[2]);
+            sprite.updatable = false;
             sprites[program_counter[1]] = sprite;
             program_counter += 3;
             break;
@@ -480,6 +481,7 @@ bool logic_run_low(void) {
             // set.cel.v
             agisprite_t sprite = sprites[program_counter[1]];
             sprite_set_cel(&sprite, logic_vars[program_counter[2]]);
+            sprite.updatable = false;
             sprites[program_counter[1]] = sprite;
             program_counter += 3;
             break;
@@ -632,6 +634,7 @@ bool logic_run_low(void) {
         case 0x49: { 
             // end.of.loop
             sprites[program_counter[1]].cycling = true;
+            sprites[program_counter[1]].updatable = true;
             sprites[program_counter[1]].end_of_loop = program_counter[2];
             logic_reset_flag(program_counter[2]);
             sprites[program_counter[1]].reverse = false;
@@ -648,6 +651,7 @@ bool logic_run_low(void) {
         case 0x4B: { 
             // reverse.loop
             sprites[program_counter[1]].cycling = true;
+            sprites[program_counter[1]].updatable = true;
             sprites[program_counter[1]].end_of_loop = program_counter[2];
             logic_reset_flag(program_counter[2]);
             sprites[program_counter[1]].reverse = true;
@@ -763,6 +767,7 @@ bool logic_test_commands(void) {
                 result = true;
             } else {
                 logic_vars[19] = ASCIIKEY;
+                ASCIIKEY = 0;
                 result = (logic_vars[19] != 0);
             }
             program_counter += 1;
@@ -1339,6 +1344,7 @@ bool logic_run_high(void) {
         case 0x84: {
             // player.control
             player_control = true;
+            sprites[0].frozen = false;
             program_counter += 1;
             break;
         }
